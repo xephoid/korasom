@@ -1,0 +1,1 @@
+KorasomGroup.deployed().then(function(group) {group.createApplication(web3.eth.accounts[1], "Test", "test.com", 1, "Blah").then( function(v) { console.log(v) })});
