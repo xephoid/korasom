@@ -5,7 +5,7 @@ import "./KorasomToken.sol";
 /**
   *
   */
-contract KorasomGroup {
+contract KorasomGroup is KorasomToken {
 
     enum ApplicationState { DoesNotExist, Submitted, Accepted, Rejected }
 
@@ -52,12 +52,8 @@ contract KorasomGroup {
     membership[] public memberships;
 
     mapping (address => application) applicationsLookup;
-    KorasomToken tokenMGMT;
 
     function KorasomGroup(bytes32 name, bytes32 website, MembershipKind kind, bytes32 comments) public {
-        tokenMGMT = new KorasomToken();
-        tokenMGMT.setGroup(this);
-
         administrator = msg.sender;
 
         // Make the creator/administrator a member because we must start with one member!
@@ -80,9 +76,9 @@ contract KorasomGroup {
         _;
     }
 
-    function checkMember(address wallet) view public returns (bool isTrue) {
+    modifier checkMember(address wallet) {
         require(memberLookup[wallet].state == MembershipState.Active || administrator == wallet);
-        return true;
+        _;
     }
 
     function getMembership(address wallet) view public returns (bytes32 id, bytes32 name, bytes32 website, uint kind, uint state) {
@@ -127,7 +123,7 @@ contract KorasomGroup {
         return a.id;
     }
 
-    function voteOnApplication(address applicantWallet, bool votedYes) isMember public returns (bool success) {
+    function voteOnApplication(address applicantWallet, bool votedYes) isMember public {
         application storage a = applicationsLookup[applicantWallet];
         if (a.state != ApplicationState.Submitted) {
             LogError("Attempt to vote on application that is not Submitted");
@@ -147,10 +143,10 @@ contract KorasomGroup {
             MemberVoted(msg.sender, a.wallet, Vote.Nay);
         }
 
-        return checkApplication(a.wallet);
+        checkApplication(a.wallet);
     }
 
-    function checkApplication(address wallet) isMember public returns (bool success) {
+    function checkApplication(address wallet) isMember public {
         application storage a = applicationsLookup[wallet];
         uint256 totalVotes = a.yays + a.nays;
         if (totalVotes > memberships.length / 3) {
@@ -163,10 +159,8 @@ contract KorasomGroup {
                 ApplicationRejected(a.wallet, a.yays, a.nays);
             } else {
                 LogError("Application is stuck in a tie!");
-                return false;
             }
         }
-        return true; // TODO: this return value is overloaded by the voteOnApplication function
     }
 
     function createMember(address wallet) isMember public returns (bytes32 memberId) {
@@ -187,14 +181,48 @@ contract KorasomGroup {
 
         MemberCreated(a.id, m.wallet, m.id, m.name, m.website, m.kind);
 
-//        if (msg.sender != m.wallet) {
-//            tokenMGMT.approve(m.wallet, 1);
-//        }
+        if (msg.sender != m.wallet) {
+            approve(m.wallet, 1);
+        }
         return memberId;
     }
 
-    function buy(address toMember) public payable {
-        tokenMGMT.buy(toMember);
+    function invest(address _toMemberWallet) checkMember(_toMemberWallet) public payable {
+
+        totalEthInWei = totalEthInWei + msg.value;
+        uint256 amount = msg.value * unitsOneEthCanBuy;
+
+        require(balances[fundsWallet] >= amount);
+
+        balances[fundsWallet] = balances[fundsWallet] - amount;
+
+        uint256 forBuyer = SafeMath.div(amount, 10);
+        uint256 forMember = amount - forBuyer;
+
+        balances[msg.sender] = balances[msg.sender] + forBuyer;
+        balances[_toMemberWallet] = balances[_toMemberWallet] + forMember;
+
+        Transfer(fundsWallet, _toMemberWallet, forMember);
+        Transfer(fundsWallet, msg.sender, forBuyer);
+
+        //Transfer ether to fundsWallet
+        fundsWallet.transfer(msg.value);
+    }
+
+    function () isMember public payable {
+        totalEthInWei = totalEthInWei + msg.value;
+        uint256 amount = msg.value * unitsOneEthCanBuy;
+
+        require(balances[fundsWallet] >= amount);
+
+        balances[fundsWallet] = balances[fundsWallet] - amount;
+
+        balances[msg.sender] = balances[msg.sender] + amount;
+
+        Transfer(fundsWallet, msg.sender, amount);
+
+        //Transfer ether to fundsWallet
+        fundsWallet.transfer(msg.value);
     }
 
     function getApplicationsCount() public returns (uint count) {

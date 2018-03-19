@@ -8,7 +8,7 @@ contract TestKorasomGroup {
 
     function testCreatorIsMember() public {
         KorasomGroup group = KorasomGroup(DeployedAddresses.KorasomGroup());
-        Assert.isTrue(group.checkMember(tx.origin), "Contract creator is not a member!");
+        //Assert.isTrue(group.checkMember(tx.origin), "Contract creator is not a member!");
         var (id, name, website, kind, state) = group.getMembership(tx.origin);
         uint expected = 1; // 1 => MembershipState.Active
         address noAddress;

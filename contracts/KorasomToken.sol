@@ -1,7 +1,6 @@
 pragma solidity ^0.4.19;
 
 import "./SafeMath.sol";
-import "./KorasomGroup.sol";
 
 contract ERC20Token {
 
@@ -63,8 +62,6 @@ contract KorasomToken is ERC20Token {
     uint256 public totalEthInWei;         // WEI is the smallest unit of ETH (the equivalent of cent in USD or satoshi in BTC). We'll store the total ETH raised via our ICO here.
     address public fundsWallet;           // Where should the raised ETH go?
 
-    KorasomGroup kGroup;
-
     // This is a constructor function
     // which means the following function name has to match the contract name declared above
     function KorasomToken() public {
@@ -75,37 +72,6 @@ contract KorasomToken is ERC20Token {
         symbol = "KRSM";                                             // Set the symbol for display purposes (CHANGE THIS)
         unitsOneEthCanBuy = 100;                                      // Set the price of your token for the ICO (CHANGE THIS)
         fundsWallet = msg.sender;                                    // The owner of the contract gets ETH
-    }
-
-    function setGroup(KorasomGroup g) {
-        kGroup = g;
-    }
-
-    modifier isMember(address wallet) {
-        kGroup.checkMember(wallet);
-        _;
-    }
-
-    function buy(address _toMemberWallet) isMember(_toMemberWallet) public payable {
-
-        totalEthInWei = totalEthInWei + msg.value;
-        uint256 amount = msg.value * unitsOneEthCanBuy;
-
-        require(balances[fundsWallet] >= amount);
-
-        balances[fundsWallet] = balances[fundsWallet] - amount;
-
-        uint256 forBuyer = SafeMath.div(amount, 10);
-        uint256 forMember = amount - forBuyer;
-
-        balances[msg.sender] = balances[msg.sender] + forBuyer;
-        balances[_toMemberWallet] = balances[msg.sender] + forMember;
-
-        Transfer(fundsWallet, msg.sender, forBuyer); // Broadcast a message to the blockchain
-        Transfer(fundsWallet, _toMemberWallet, forMember); // Broadcast a message to the blockchain
-
-        //Transfer ether to fundsWallet
-        fundsWallet.transfer(msg.value);
     }
 
     function transfer(address _to, uint256 _value) public returns (bool success) {
