@@ -3,6 +3,16 @@ pragma solidity ^0.4.19;
 import "./KorasomToken.sol";
 
 /**
+  * The only token you get by giving.
+  *
+  * Key Functions:
+  * createApplication(name, website, kind, comments)
+  * voteOnApplication(applicantWallet, voteYes)
+  * getApplicationById(applicationId)
+  * getMembershipById(memberId)
+  * getMemberIds()
+  * getApplicationIds()
+  * invest(toMember)
   *
   */
 contract KorasomGroup is KorasomToken {
@@ -124,6 +134,8 @@ contract KorasomGroup is KorasomToken {
 
     function voteOnApplication(address applicantWallet, bool votedYes) isMember(msg.sender) public {
         application storage a = applicationsLookup[applicantWallet];
+
+        // Application must be Submitted and Member must not have already voted
         require(a.state == ApplicationState.Submitted && a.votes[msg.sender] == Vote.NoVote);
 
         if (votedYes) {

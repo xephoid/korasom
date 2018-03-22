@@ -20,10 +20,10 @@ contract TestKorasomGroup {
         var (aId, aName, aWebsite, aComments, aKind, aState) = group.getApplication(tx.origin);
         Assert.notEqual(aId, 0, "Initial application has invalid ID!");
         Assert.equal(aState, 2, "Initial application is not Accepted!");
-        Assert.notEqual(aName, "", "Initial appliction has no name!");
-        Assert.notEqual(aWebsite, "", "Initial appliction has no website!");
-        Assert.notEqual(aComments, "", "Initial appliction has no comments!");
-        Assert.notEqual(aKind, 0, "Initial appliction has no kind!");
+        Assert.notEqual(aName, "", "Initial application has no name!");
+        Assert.notEqual(aWebsite, "", "Initial application has no website!");
+        Assert.notEqual(aComments, "", "Initial application has no comments!");
+        Assert.notEqual(aKind, 0, "Initial application has no kind!");
     }
 
 }
