@@ -94,19 +94,6 @@ contract('KorasomGroup', function(accounts) {
         var a = await group.getApplication.call(toReject.wallet);
         assert.equal(a[5].toNumber(), 3, "Application state should be Rejected");
 
-        // return KorasomGroup.deployed().then(function(instance) {
-        //     group = instance;
-        //     return group.voteOnApplication(toReject.wallet, false);
-        // }).then(function() {
-        //     return group.getApplicationVotes.call(toReject.wallet);
-        // }, function() {
-        //     assert.fail("Member was not allowed to vote on application!");
-        // }).then(function(a) {
-        //     assert.equal(a[1].toNumber(), 1, "Application should have 1 nay vote");
-        //     return group.getApplication.call(toReject.wallet);
-        // }).then(function(a) {
-        //     assert.equal(a[5].toNumber(), 3, "Application state should be Rejected");
-        // });
     });
 
     it("should allow members to accept an application", async function() {

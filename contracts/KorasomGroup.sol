@@ -47,11 +47,12 @@ contract KorasomGroup is KorasomToken {
     event LogError(string msg);
 
     address public administrator;
-    mapping (address => membership) public memberLookup;
-    application[] public applications;
-    membership[] public memberships;
-
+    mapping (address => membership) memberLookup;
     mapping (address => application) applicationsLookup;
+    mapping (bytes32 => membership) membersById;
+    mapping (uint256 => application) applicationsById;
+    bytes32[] memberIds;
+    uint256[] applicationIds;
 
     function KorasomGroup(bytes32 name, bytes32 website, MembershipKind kind, bytes32 comments) public {
         administrator = msg.sender;
@@ -68,15 +69,7 @@ contract KorasomGroup is KorasomToken {
         _;
     }
 
-    modifier isMember {
-        if (memberLookup[msg.sender].state != MembershipState.Active && administrator != msg.sender) {
-            LogError("Non-member called member only function");
-        }
-        require(memberLookup[msg.sender].state == MembershipState.Active || administrator == msg.sender);
-        _;
-    }
-
-    modifier checkMember(address wallet) {
+    modifier isMember(address wallet) {
         require(memberLookup[wallet].state == MembershipState.Active || administrator == wallet);
         _;
     }
@@ -84,6 +77,17 @@ contract KorasomGroup is KorasomToken {
     function getMembership(address wallet) view public returns (bytes32 id, bytes32 name, bytes32 website, uint kind, uint state) {
         membership storage m = memberLookup[wallet];
         return (m.id, m.name, m.website, uint(m.kind), uint(m.state));
+    }
+
+    function getMembershipById(bytes32 memberId) view public returns (address wallet, bytes32 name, bytes32 website, uint kind, uint state) {
+        membership storage m = membersById[memberId];
+        return (m.wallet, m.name, m.website, uint(m.kind), uint(m.state));
+    }
+
+    function getApplicationById(uint256 applicationId) view public
+    returns (address wallet, bytes32 name, bytes32 website, bytes32 comments, uint kind, uint state) {
+        application storage a = applicationsById[applicationId];
+        return (a.wallet, a.name, a.website, a.comments, uint(a.kind), uint(a.state));
     }
 
     function getApplication(address wallet) view public
@@ -99,17 +103,11 @@ contract KorasomGroup is KorasomToken {
 
     function createApplication(bytes32 name, bytes32 website, MembershipKind kind,
         bytes32 comments) doesNotExist public returns (uint256 applicationId) {
-        if (memberLookup[msg.sender].state == MembershipState.Active) {
-            LogError("Active member attempted to apply");
-        }
         require(memberLookup[msg.sender].state != MembershipState.Active);
-        if (memberLookup[msg.sender].wallet == msg.sender) {
-            LogError("Applicant is already a member");
-        }
         require(memberLookup[msg.sender].wallet != msg.sender);
 
         application storage a = applicationsLookup[msg.sender];
-        a.id = applications.length + 1;
+        a.id = applicationIds.length + 1;
         a.wallet = msg.sender;
         a.name = name;
         a.website = website;
@@ -117,20 +115,15 @@ contract KorasomGroup is KorasomToken {
         a.comments = comments;
         a.state = ApplicationState.Submitted;
 
-        applications.push(a);
+        applicationsById[a.id] = a;
+        applicationIds.push(a.id);
 
         ApplicationCreated(a.id, msg.sender, name, website, kind, comments);
         return a.id;
     }
 
-    function voteOnApplication(address applicantWallet, bool votedYes) isMember public {
+    function voteOnApplication(address applicantWallet, bool votedYes) isMember(msg.sender) public {
         application storage a = applicationsLookup[applicantWallet];
-        if (a.state != ApplicationState.Submitted) {
-            LogError("Attempt to vote on application that is not Submitted");
-        }
-        if (a.votes[msg.sender] != Vote.NoVote) {
-            LogError("Member attempted to vote even though they already voted");
-        }
         require(a.state == ApplicationState.Submitted && a.votes[msg.sender] == Vote.NoVote);
 
         if (votedYes) {
@@ -146,10 +139,10 @@ contract KorasomGroup is KorasomToken {
         checkApplication(a.wallet);
     }
 
-    function checkApplication(address wallet) isMember public {
+    function checkApplication(address wallet) isMember(msg.sender) public {
         application storage a = applicationsLookup[wallet];
         uint256 totalVotes = a.yays + a.nays;
-        if (totalVotes > memberships.length / 3) {
+        if (totalVotes > memberIds.length / 3) {
             if (a.yays > a.nays) {
                 a.state = ApplicationState.Accepted;
                 bytes32 memberId = createMember(a.wallet);
@@ -163,7 +156,7 @@ contract KorasomGroup is KorasomToken {
         }
     }
 
-    function createMember(address wallet) isMember public returns (bytes32 memberId) {
+    function createMember(address wallet) isMember(msg.sender) public returns (bytes32 memberId) {
         application storage a = applicationsLookup[wallet];
         require(a.state == ApplicationState.Accepted);
 
@@ -177,7 +170,8 @@ contract KorasomGroup is KorasomToken {
         m.kind = a.kind;
         m.state = MembershipState.Active;
 
-        memberships.push(m);
+        membersById[m.id] = m;
+        memberIds.push(m.id);
 
         MemberCreated(a.id, m.wallet, m.id, m.name, m.website, m.kind);
 
@@ -187,7 +181,7 @@ contract KorasomGroup is KorasomToken {
         return memberId;
     }
 
-    function invest(address _toMemberWallet) checkMember(_toMemberWallet) public payable {
+    function invest(address _toMemberWallet) isMember(_toMemberWallet) public payable {
 
         totalEthInWei = totalEthInWei + msg.value;
         uint256 amount = msg.value * unitsOneEthCanBuy;
@@ -209,7 +203,7 @@ contract KorasomGroup is KorasomToken {
         fundsWallet.transfer(msg.value);
     }
 
-    function () isMember public payable {
+    function () isMember(msg.sender) public payable {
         totalEthInWei = totalEthInWei + msg.value;
         uint256 amount = msg.value * unitsOneEthCanBuy;
 
@@ -225,11 +219,19 @@ contract KorasomGroup is KorasomToken {
         fundsWallet.transfer(msg.value);
     }
 
-    function getApplicationsCount() public returns (uint count) {
-        return applications.length;
+    function getApplicationsCount() view public returns (uint count) {
+        return applicationIds.length;
     }
 
-    function getMembersCount() public returns (uint count) {
-        return memberships.length;
+    function getApplicationIds() view public returns(uint256[] appIds) {
+        return applicationIds;
+    }
+
+    function getMembersCount() view public returns (uint count) {
+        return memberIds.length;
+    }
+
+    function getMemberIds() view public returns(bytes32[] mIds) {
+        return memberIds;
     }
 }
