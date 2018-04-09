@@ -3,8 +3,26 @@ import 'babel-polyfill'
 
 contract('KorasomTest', function (accounts) {
 
-  let members = [accounts[1], accounts[2], accounts[3], accounts[4]];
+  let founder = {
+    wallet: accounts[0],
+    name: "Founder Name",
+    website: "founder-website",
+    kind: 3,
+    comments: "I am the founder!"
+  };
 
+  let members = []
+
+  for (let i = 1; i < 5; i++) {
+    let member = `{
+      wallet: accounts[${i}],
+      name: "some-acceptable-org",
+      website: "some-acceptable-website",
+      kind: 1,
+      comments: "I'm just here so I don't get fined!"
+    }`
+    members.push(member)
+  }
   var mochaAsync = (fn) => {
     return async () => {
         try {
@@ -17,49 +35,74 @@ contract('KorasomTest', function (accounts) {
 
   it('should leave app in state of submitted if quorum is not reached', mochaAsync(async () => {
 
-    // create application
-    let app = await KorasomTest.deployed();
+    // setup members
+    let app = await KorasomTest.deployed(founder.name, founder.website, founder.kind,
+      founder.comments, { from: founder.wallet });
 
-    // // create members
-    // for (let i = 0; i < members.length; i++) {
-    //    await app.createMember(accounts[1]);
-    // }
-
-    // create applications
-    for (let i = 0; i < members.length; i++) {
-      await app.createApplication(accounts[1]);
+    for (let n = 1; n < 4; n++) {
+      await app.createApplication(members[n].name, 
+                                  members[n].website, 
+                                  members[n].kind,
+                                  members[n].comments, 
+                                  { from: members[n].wallet });
+                      
+      let a = app.applicationsLookup[accounts[n]];
+      for (let x = 0; x < n; x++) {
+        await a.voteOnApplication(accounts[x], true)
+      }
     }
 
-    let a = app.applicationsLookup[accounts[0]];
+    // create testing application
+    await app.createApplication(members[4].name, 
+      members[4].website, 
+      members[4].kind,
+      members[4].comments, 
+      { from: members[4].wallet });
 
-    // Setup (vote)   number of votes must equal +33% number of members
-    await a.voteOnApplication(accounts[1], true)
+    let a = await app.applicationsLookup[accounts[4]];
+
+    await a.voteOnApplication(accounts[0], true)
 
     // check vote
-    let vote = await a.checkApplication(accounts[0])
+    let vote = await a.checkApplication(accounts[4])
 
     assert.equal(vote.state, 'Submitted', 'Quorum has not been reached');
   }));
 
   it('should put app in state of accepted or rejected if quorum is reached', mochaAsync(async () => {
     
-    // create application
-    let app = await KorasomTest.deployed();
+    // setup members
+    let app = await KorasomTest.deployed(founder.name, founder.website, founder.kind,
+      founder.comments, { from: founder.wallet });
 
-    // create members
-    for (let i = 0; i < members.length; i++) {
-      await app.createMember(accounts[1]);
-   }
+    for (let n = 1; n < 4; n++) {
+      await app.createApplication(members[n].name, 
+                                  members[n].website, 
+                                  members[n].kind,
+                                  members[n].comments, 
+                                  { from: members[n].wallet });
+                      
+      let a = app.applicationsLookup[accounts[n]];
+      for (let x = 0; x < n; x++) {
+        await a.voteOnApplication(accounts[x], true)
+      }
+    }
 
-   let a = app.applicationsLookup[accounts[0]];
+    // create testing application
+    await app.createApplication(members[4].name, 
+      members[4].website, 
+      members[4].kind,
+      members[4].comments, 
+      { from: members[4].wallet });
 
-   // Setup (vote)   number of votes must equal +33% number of members
-   await a.voteOnApplication(accounts[1], true)
-   await a.voteOnApplication(accounts[2], true)
-   await a.voteOnApplication(accounts[3], false)
+    let a = await app.applicationsLookup[accounts[4]];
 
-   // check vote
-   let vote = await a.checkApplication(accounts[0])
+    await a.voteOnApplication(accounts[0], true)
+    await a.voteOnApplication(accounts[1], true)
+    await a.voteOnApplication(accounts[2], true)
+
+    // check vote
+    let vote = await a.checkApplication(accounts[4])
 
    assert.equal(vote.state, 'Accepted', 'Quorum has been reached. Welcome new member!');
   }));
@@ -106,7 +149,7 @@ contract('KorasomTest', function (accounts) {
     let ids = await a.getMemberIds(accounts[0]);
     console.log(ids);
 
-    assert.equal(ids, [1], "Here are the member id(s)");
+    assert.equal(ids, !null, "There's Ids here");
     // keccak256(a.id, a.name, a.website, a.kind, a.comments, now)
   }));  
 });
