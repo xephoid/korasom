@@ -35,10 +35,11 @@ contract('KorasomTest', function (accounts) {
 
   it('should leave app in state of submitted if quorum is not reached', mochaAsync(async () => {
 
-    // setup members
+    // setup app & admin
     let app = await KorasomTest.deployed(founder.name, founder.website, founder.kind,
       founder.comments, { from: founder.wallet });
 
+    // create members
     for (let n = 1; n < 4; n++) {
       await app.createApplication(members[n].name, 
                                   members[n].website, 
@@ -52,7 +53,7 @@ contract('KorasomTest', function (accounts) {
       }
     }
 
-    // create testing application
+    // create application for testing
     await app.createApplication(members[4].name, 
       members[4].website, 
       members[4].kind,
@@ -71,10 +72,11 @@ contract('KorasomTest', function (accounts) {
 
   it('should put app in state of accepted or rejected if quorum is reached', mochaAsync(async () => {
     
-    // setup members
+    // setup app & admin
     let app = await KorasomTest.deployed(founder.name, founder.website, founder.kind,
       founder.comments, { from: founder.wallet });
 
+    // create members
     for (let n = 1; n < 4; n++) {
       await app.createApplication(members[n].name, 
                                   members[n].website, 
@@ -88,13 +90,14 @@ contract('KorasomTest', function (accounts) {
       }
     }
 
-    // create testing application
+    // create application for testing
     await app.createApplication(members[4].name, 
       members[4].website, 
       members[4].kind,
       members[4].comments, 
       { from: members[4].wallet });
 
+    // find application
     let a = await app.applicationsLookup[accounts[4]];
 
     await a.voteOnApplication(accounts[0], true)
@@ -108,48 +111,78 @@ contract('KorasomTest', function (accounts) {
   }));
 
   it('getApplicationsCount() should return number of Applicants', mochaAsync(async () => {
-    let app = await KorasomTest.deployed();
 
-    // find app
-    let a = await app.applicationsLookup[accounts[0]];
-    let count = await a.getApplicationsCount(accounts[0]);
+    // setup app & admin
+    let app = await KorasomTest.deployed(founder.name, founder.website, founder.kind,
+      founder.comments, { from: founder.wallet });
 
-    assert.equal(count, 1, "Num of applications");
+    // create members
+    for (let n = 1; n < 5; n++) {
+      await app.createApplication(members[n].name, 
+                                  members[n].website, 
+                                  members[n].kind,
+                                  members[n].comments, 
+                                  { from: members[n].wallet });
+    }
+
+    let count = await app.getApplicationsCount();
+
+    assert.equal(count, 5, "There are 5 applications");
   })); 
 
   it('getApplicationIds() should return array of Application IDs', mochaAsync(async () => {
-    let app = await KorasomTest.deployed();
+    
+    // setup app & admin
+    let app = await KorasomTest.deployed(founder.name, founder.website, founder.kind,
+      founder.comments, { from: founder.wallet });
 
-    // find app
-    let a = await app.applicationsLookup[accounts[0]];
-    let ids = await a.getApplicationIds(accounts[0]);
-    console.log(ids);
+    
+    // create members
+    for (let n = 1; n < 5; n++) {
+      await app.createApplication(members[n].name, 
+                                  members[n].website, 
+                                  members[n].kind,
+                                  members[n].comments, 
+                                  { from: members[n].wallet });
+    }
 
-    assert.equal(ids, [1], "These are the app IDs");
+    let ids = await app.getApplicationIds();
+
+    assert.equal(ids, [1, 2, 3, 4, 5]);
   }));
   
   it('getMembersCount() should return number of members', mochaAsync(async () => {
-    // create application
-    let app = await KorasomTest.deployed();
+    
+    // setup app & admin
+    let app = await KorasomTest.deployed(founder.name, founder.website, founder.kind,
+      founder.comments, { from: founder.wallet });
 
-    // find app
-    let a = await app.applicationsLookup[accounts[0]];
-    let count = await a.getMembersCount(accounts[0]);
+    // create members
+    for (let n = 1; n < 5; n++) {
+      await app.createApplication(members[n].name, 
+                                  members[n].website, 
+                                  members[n].kind,
+                                  members[n].comments, 
+                                  { from: members[n].wallet });
+                      
+      let a = app.applicationsLookup[accounts[n]];
+      for (let x = 0; x < n; x++) {
+        await a.voteOnApplication(accounts[x], true)
+      }
+    }
 
-    assert.equal(count, 1, "You're the only member!");
+    let count = await app.getMembersCount();
+
+    assert.equal(count, 5, "5 Members");
   }));
   
   it('getMemberIds() should return array of members IDs', mochaAsync(async () => {
     
-    // create application
+    // setup app & admin
     let app = await KorasomTest.deployed();
 
-    // find app
-    let a = await app.applicationsLookup[accounts[0]];
-    let ids = await a.getMemberIds(accounts[0]);
-    console.log(ids);
+    let ids = await app.getMemberIds();
 
-    assert.equal(ids, !null, "There's Ids here");
-    // keccak256(a.id, a.name, a.website, a.kind, a.comments, now)
+    assert.equal(ids, !null, "There id hashed array is not empty");
   }));  
 });
