@@ -5,15 +5,41 @@ import "./KorasomToken.sol";
 /**
   * The only token you get by giving.
   *
-  * Key Functions:
-  * createApplication(name, website, kind, comments)
-  * voteOnApplication(applicantWallet, voteYes)
-  * getApplicationById(applicationId)
-  * getMembershipById(memberId)
-  * getMemberIds()
-  * getApplicationIds()
-  * invest(toMember)
+  * Key Functions
+  * -------------
+  * createApplication(string name, string website, int kind, string comments) returns applicationId
+  * voteOnApplication(address applicantWallet, bool voteYes)
+  * getApplicationById(int applicationId) returns tuple(id, name, website, comments, kind, state)
+  * getApplicationVotes() returns tuple (yays, nays)
+  * getMembershipById(string memberId) returns tuple(wallet, name, website, kind, state)
+  * getMemberIds() returns int[]
+  * getApplicationIds() returns int[]
+  * invest(address toMember)
   *
+  * Kind Key
+  * --------
+  * 0 => NotSet
+  * 1 => NonProfit
+  * 2 => Corporation
+  * 3 => Hybrid
+  * 4 => Coalition
+  * 5 => Cooperative
+  * 6 => Individual
+  * 7 => DAO
+  * 8 => Other
+  *
+  * Application State Key
+  * ---------
+  * 0 => DoesNotExist
+  * 1 => Submitted
+  * 2 => Accepted
+  * 3 => Rejected
+  *
+  * Vote Key
+  * --------
+  * 0 => NoVote
+  * 1 => Yay
+  * 2 => Nay
   */
 contract KorasomGroup is KorasomToken {
 
@@ -57,12 +83,12 @@ contract KorasomGroup is KorasomToken {
     event LogError(string msg);
 
     address public administrator;
-    mapping (address => membership) memberLookup;
-    mapping (address => application) applicationsLookup;
-    mapping (bytes32 => membership) membersById;
-    mapping (uint256 => application) applicationsById;
-    bytes32[] memberIds;
-    uint256[] applicationIds;
+    mapping (address => membership) private memberLookup;
+    mapping (address => application) private applicationsLookup;
+    mapping (bytes32 => membership) private membersById;
+    mapping (uint256 => application) private applicationsById;
+    bytes32[] private memberIds;
+    uint256[] private applicationIds;
 
     function KorasomGroup(bytes32 name, bytes32 website, MembershipKind kind, bytes32 comments) public {
         administrator = msg.sender;
@@ -82,33 +108,6 @@ contract KorasomGroup is KorasomToken {
     modifier isMember(address wallet) {
         require(memberLookup[wallet].state == MembershipState.Active || administrator == wallet);
         _;
-    }
-
-    function getMembership(address wallet) view public returns (bytes32 id, bytes32 name, bytes32 website, uint kind, uint state) {
-        membership storage m = memberLookup[wallet];
-        return (m.id, m.name, m.website, uint(m.kind), uint(m.state));
-    }
-
-    function getMembershipById(bytes32 memberId) view public returns (address wallet, bytes32 name, bytes32 website, uint kind, uint state) {
-        membership storage m = membersById[memberId];
-        return (m.wallet, m.name, m.website, uint(m.kind), uint(m.state));
-    }
-
-    function getApplicationById(uint256 applicationId) view public
-    returns (address wallet, bytes32 name, bytes32 website, bytes32 comments, uint kind, uint state) {
-        application storage a = applicationsById[applicationId];
-        return (a.wallet, a.name, a.website, a.comments, uint(a.kind), uint(a.state));
-    }
-
-    function getApplication(address wallet) view public
-    returns (uint256 id, bytes32 name, bytes32 website, bytes32 comments, uint kind, uint state) {
-        application storage a = applicationsLookup[wallet];
-        return (a.id, a.name, a.website, a.comments, uint(a.kind), uint(a.state));
-    }
-
-    function getApplicationVotes(address wallet) view public returns (uint yays, uint nays) {
-        application storage a = applicationsLookup[wallet];
-        return (a.yays, a.nays);
     }
 
     function createApplication(bytes32 name, bytes32 website, MembershipKind kind,
@@ -151,7 +150,7 @@ contract KorasomGroup is KorasomToken {
         checkApplication(a.wallet);
     }
 
-    function checkApplication(address wallet) isMember(msg.sender) public {
+    function checkApplication(address wallet) isMember(msg.sender) private {
         application storage a = applicationsLookup[wallet];
         uint256 totalVotes = a.yays + a.nays;
         if (totalVotes > memberIds.length / 3) {
@@ -165,10 +164,11 @@ contract KorasomGroup is KorasomToken {
             } else {
                 LogError("Application is stuck in a tie!");
             }
+            applicationsById[a.id] = a;
         }
     }
 
-    function createMember(address wallet) isMember(msg.sender) public returns (bytes32 memberId) {
+    function createMember(address wallet) isMember(msg.sender) private returns (bytes32 memberId) {
         application storage a = applicationsLookup[wallet];
         require(a.state == ApplicationState.Accepted);
 
@@ -229,6 +229,38 @@ contract KorasomGroup is KorasomToken {
 
         //Transfer ether to fundsWallet
         fundsWallet.transfer(msg.value);
+    }
+
+    function getMemberVoteOnApplication(uint256 applicationId) isMember(msg.sender) view public returns (Vote vote) {
+        application storage a = applicationsById[applicationId];
+        return a.votes[msg.sender];
+    }
+
+    function getMembership(address wallet) view public returns (bytes32 id, bytes32 name, bytes32 website, uint kind, uint state) {
+        membership storage m = memberLookup[wallet];
+        return (m.id, m.name, m.website, uint(m.kind), uint(m.state));
+    }
+
+    function getMembershipById(bytes32 memberId) view public returns (address wallet, bytes32 name, bytes32 website, uint kind, uint state) {
+        membership storage m = membersById[memberId];
+        return (m.wallet, m.name, m.website, uint(m.kind), uint(m.state));
+    }
+
+    function getApplicationById(uint256 applicationId) view public
+    returns (address wallet, bytes32 name, bytes32 website, bytes32 comments, uint kind, uint state) {
+        application storage a = applicationsById[applicationId];
+        return (a.wallet, a.name, a.website, a.comments, uint(a.kind), uint(a.state));
+    }
+
+    function getApplication(address wallet) view public
+    returns (uint256 id, bytes32 name, bytes32 website, bytes32 comments, uint kind, uint state) {
+        application storage a = applicationsLookup[wallet];
+        return (a.id, a.name, a.website, a.comments, uint(a.kind), uint(a.state));
+    }
+
+    function getApplicationVotes(uint256 applicationId) view public returns (uint yays, uint nays) {
+        application storage a = applicationsById[applicationId];
+        return (a.yays, a.nays);
     }
 
     function getApplicationsCount() view public returns (uint count) {

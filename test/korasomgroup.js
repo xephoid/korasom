@@ -3,6 +3,7 @@ var KorasomGroup = artifacts.require("./KorasomGroup.sol");
 contract('KorasomGroup', function(accounts) {
 
     var founder = {
+        applicationId: 1,
         wallet: accounts[0],
         name: "Founder Name",
         website: "founder-website",
@@ -11,6 +12,7 @@ contract('KorasomGroup', function(accounts) {
     };
 
     var toAccept = {
+        applicationId: 2,
         wallet: accounts[1],
         name: "some-acceptable-org",
         website: "some-acceptable-website",
@@ -19,6 +21,7 @@ contract('KorasomGroup', function(accounts) {
     };
 
     var toReject = {
+        applicationId: 3,
         wallet: accounts[2],
         name: "some-rejectable-org",
         website: "some-rejectable-website",
@@ -37,7 +40,7 @@ contract('KorasomGroup', function(accounts) {
             await group.createApplication(founder.name, founder.website, founder.kind,
                 founder.comments, { from: founder.wallet });
         } catch(e) {
-            return true; // succes!
+            return true; // success!
         }
         assert.fail("Should never get here!");
     });
@@ -88,10 +91,10 @@ contract('KorasomGroup', function(accounts) {
 
         await group.voteOnApplication(toReject.wallet, false);
 
-        var votes = await group.getApplicationVotes.call(toReject.wallet);
-        assert.equal(votes[1].toNumber(), 1, "Application should have 1 nay vote");
-
         var a = await group.getApplication.call(toReject.wallet);
+        var votes = await group.getApplicationVotes.call(a[0].toNumber());
+        console.log(votes);
+        assert.equal(votes[1].toNumber(), 1, "Application should have 1 nay vote");
         assert.equal(a[5].toNumber(), 3, "Application state should be Rejected");
 
     });
@@ -100,9 +103,14 @@ contract('KorasomGroup', function(accounts) {
         var group = await KorasomGroup.deployed();
 
         await group.voteOnApplication(toAccept.wallet, true);
-        var votes = await group.getApplicationVotes.call(toAccept.wallet);
-        assert.equal(votes[0], 1, "Application should have 1 yay vote");
+        var a = await group.getApplication.call(toAccept.wallet);
+        console.log(a[0].toNumber());
+        var votes = await group.getApplicationVotes.call(a[0].toNumber());
+        assert.equal(votes[0].toNumber(), 1, "Application should have 1 yay vote");
+
+        assert.equal(a[5].toNumber(), 2, "Application should be Accepted");
         var m = await group.getMembership.call(toAccept.wallet);
+
 
         assert.equal(web3.toAscii(m[1]).replace(/\u0000/g, ''), toAccept.name, "New membership has the wrong name");
         assert.equal(web3.toAscii(m[2]).replace(/\u0000/g, ''), toAccept.website, "New membership has the wrong website");
