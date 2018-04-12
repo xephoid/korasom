@@ -4,18 +4,19 @@ import { connect } from 'react-redux';
 const App = ({web3}) => (
   <div className="App">  
     <h1>Korasom</h1>
-    {/* <h2>Example Truffle Dapp</h2> */}
+    <h2>Token Transfer</h2>
     <h3>You have <span className="black"><span id="balance">{web3 && web3.balance}</span> KRSM</span></h3>
 
     <br />
-    <h1>Send MetaCoin</h1>
-    <br /><label htmlFor="from">From:</label><input type="text" id="from" value={web3 && web3.currentAccount} disabled></input>
+    <h1>Send KSRM</h1>
     <br /><label htmlFor="amount">Amount:</label><input type="text" id="amount" placeholder="e.g., 95"></input>
+    <br /><label htmlFor="from">From Address:</label><input type="text" id="from" value={web3 && web3.currentAccount} disabled></input>
+    <br /><div id="fromSelect" />
     <br /><label htmlFor="receiver">To Address:</label><input type="text" id="receiver" placeholder="e.g., 0x93e66d9baea28c17d9fc393b53e3fbdd76899dae"></input>
     <br /><br /><button id="send" 
       // onClick={App.sendCoin()}
     >
-      Send MetaCoin
+      Send KRSM
     </button>
     <br /><br />
     <span id="status">{web3 && web3.status}</span>
