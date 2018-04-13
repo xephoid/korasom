@@ -1,15 +1,16 @@
 {
   "name": "korasom",
-  "version": "0.0.2",
+  "version": "0.7",
   "description": "Frontend example using truffle v3",
   "scripts": {
     "lint": "eslint ./",
     "build": "webpack",
-    "server": "node server.js"
+    "server": "node server.js",
     "dev": "concurrently \"gulp watch\" \"nodemon\""
   },
-  "author": "Douglas von Kohorn",
+  "author": "Zeke Swepson",
   "license": "MIT",
+  "repository": "https://github.com/xephoid/korasom",
   "devDependencies": {
     "babel-cli": "^6.22.2",
     "babel-core": "^6.22.1",
@@ -62,7 +63,7 @@
   "dependencies": {
     "bluebird": "^3.5.1",
     "ganache-cli": "^6.1.0",
-    "redis": "^2.8.0"
+    "redis": "^2.8.0",
     "jquery": "^3.2.1",
     "react": "^16.3.0",
     "react-dom": "^16.3.0",
