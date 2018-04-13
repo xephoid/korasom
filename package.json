@@ -1,11 +1,12 @@
 {
-  "name": "truffle-init-webpack",
+  "name": "korasom",
   "version": "0.0.2",
   "description": "Frontend example using truffle v3",
   "scripts": {
     "lint": "eslint ./",
     "build": "webpack",
-    "dev": "webpack-dev-server"
+    "dev": "webpack-dev-server",
+    "server": "node server.js"
   },
   "author": "Douglas von Kohorn",
   "license": "MIT",
@@ -21,6 +22,7 @@
     "babel-runtime": "^6.26.0",
     "copy-webpack-plugin": "^4.0.1",
     "css-loader": "^0.26.1",
+    "dotenv": "^5.0.1",
     "eslint": "^3.14.0",
     "eslint-config-standard": "^6.0.0",
     "eslint-plugin-babel": "^4.0.0",
@@ -36,6 +38,8 @@
     "webpack-dev-server": "^2.3.0"
   },
   "dependencies": {
-    "ganache-cli": "^6.1.0"
+    "bluebird": "^3.5.1",
+    "ganache-cli": "^6.1.0",
+    "redis": "^2.8.0"
   }
 }

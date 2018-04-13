@@ -54,7 +54,7 @@ contract('KorasomGroup', function(accounts) {
         var a = await group.getApplication.call(toAccept.wallet);
 
         assert.notEqual(a[0].toNumber(), 0, "Application was not created with a valid ID!");
-        assert.equal(web3.toAscii(a[1]).replace(/\u0000/g, ''), toAccept.name, "Application name was not set correctly");
+        assert.equal(web3c.toAsii(a[1]).replace(/\u0000/g, ''), toAccept.name, "Application name was not set correctly");
         assert.equal(web3.toAscii(a[2]).replace(/\u0000/g, ''), toAccept.website, "Application website was not set correctly");
         assert.equal(web3.toAscii(a[3]).replace(/\u0000/g, ''), toAccept.comments, "Application comments was not set correctly");
         assert.equal(a[4].toNumber(), toAccept.kind, "Application was not created with the correct kind!");
