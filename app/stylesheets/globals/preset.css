@@ -7,13 +7,19 @@ body {
 
 label {
   display: inline-block;
-  width: 100px;
+  width: 150px;
 }
 
-input {
+input, select {
   width: 500px;
   padding: 5px;
   font-size: 16px;
+}
+
+select {
+  background: transparent;
+  border: 1px solid grey;
+  border-radius: 0px;
 }
 
 button {
