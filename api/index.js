@@ -39,6 +39,9 @@ KorasomGroup.deployed().then(function(group) {
     kGroup = group;
     Membership = new Membership(redisClient, web3, kGroup);
     Application = new Application(redisClient, web3, kGroup);
+
+    Membership.populate();
+    Application.populate();
 });
 
 app.get('/getMembershipIds', async function(req, res, next) {

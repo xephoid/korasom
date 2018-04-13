@@ -5,12 +5,13 @@ class Membership {
         this.redis = redis;
         this.web3 = web3;
         this.kGroup = kGroup;
-        this.prefix = "KSM:member:";
-
-        this.prepopulate();
+        this.prefix = "KRSM:member:";
     }
 
-    async prepopulate() {
+    /**
+     * Populate the cache from the chain.
+     */
+    async populate() {
         let self = this;
         let memberIds = await this.ids(true);
         memberIds.forEach(function (id) {

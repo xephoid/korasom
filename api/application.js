@@ -5,12 +5,13 @@ class Application {
         this.redis = redis;
         this.web3 = web3;
         this.kGroup = kGroup;
-        this.prefix = "KSM:application:";
-
-        this.prepopulate();
+        this.prefix = "KRSM:application:";
     }
 
-    async prepopulate() {
+    /**
+     * Populate the cache from the chain.
+     */
+    async populate() {
         let self = this;
         let applicationIds = await this.ids(true);
         applicationIds.forEach(function (id) {
