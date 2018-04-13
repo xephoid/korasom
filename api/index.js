@@ -25,8 +25,8 @@ if (typeof web3 !== 'undefined') {
     web3 = new Web3(web3.currentProvider);
 } else {
     // set the provider you want from Web3.providers
-    console.log("web3 connecting to " + (process.env.HTTP_PROVIDER || "http://localhost:8545"));
-    web3 = new Web3(new Web3.providers.HttpProvider(process.env.HTTP_PROVIDER || "http://localhost:8545"));
+    console.log("web3 connecting to " + (process.env.WEB3_PROVIDER || "http://localhost:8545"));
+    web3 = new Web3(new Web3.providers.HttpProvider(process.env.WEB3_PROVIDER || "http://localhost:8545"));
 }
 
 // Set up DAOs
