@@ -90,11 +90,11 @@ contract KorasomGroup is KorasomToken {
     bytes32[] private memberIds;
     uint256[] private applicationIds;
 
-    function KorasomGroup(bytes32 name, bytes32 website, MembershipKind kind, bytes32 comments) public {
+    function KorasomGroup(bytes32 _name, bytes32 _website, MembershipKind _kind, bytes32 _comments) public {
         administrator = msg.sender;
 
         // Make the creator/administrator a member because we must start with one member!
-        createApplication(name, website, kind, comments);
+        createApplication(_name, _website, _kind, _comments);
         application storage a = applicationsLookup[administrator];
         a.state = ApplicationState.Accepted;
         createMember(a.wallet);
@@ -110,34 +110,34 @@ contract KorasomGroup is KorasomToken {
         _;
     }
 
-    function createApplication(bytes32 name, bytes32 website, MembershipKind kind,
-        bytes32 comments) doesNotExist public returns (uint256 applicationId) {
+    function createApplication(bytes32 _name, bytes32 _website, MembershipKind _kind,
+        bytes32 _comments) doesNotExist public returns (uint256 applicationId) {
         require(memberLookup[msg.sender].state != MembershipState.Active);
         require(memberLookup[msg.sender].wallet != msg.sender);
 
         application storage a = applicationsLookup[msg.sender];
         a.id = applicationIds.length + 1;
         a.wallet = msg.sender;
-        a.name = name;
-        a.website = website;
-        a.kind = kind;
-        a.comments = comments;
+        a.name = _name;
+        a.website = _website;
+        a.kind = _kind;
+        a.comments = _comments;
         a.state = ApplicationState.Submitted;
 
         applicationsById[a.id] = a;
         applicationIds.push(a.id);
 
-        ApplicationCreated(a.id, msg.sender, name, website, kind, comments);
+        ApplicationCreated(a.id, msg.sender, _name, _website, _kind, _comments);
         return a.id;
     }
 
-    function voteOnApplication(address applicantWallet, bool votedYes) isMember(msg.sender) public {
-        application storage a = applicationsLookup[applicantWallet];
+    function voteOnApplication(address _applicantWallet, bool _votedYes) isMember(msg.sender) public {
+        application storage a = applicationsLookup[_applicantWallet];
 
         // Application must be Submitted and Member must not have already voted
         require(a.state == ApplicationState.Submitted && a.votes[msg.sender] == Vote.NoVote);
 
-        if (votedYes) {
+        if (_votedYes) {
             a.yays = a.yays + 1;
             a.votes[msg.sender] = Vote.Yay;
             MemberVoted(msg.sender, a.wallet, Vote.Yay);
@@ -147,16 +147,16 @@ contract KorasomGroup is KorasomToken {
             MemberVoted(msg.sender, a.wallet, Vote.Nay);
         }
 
-        checkApplication(a.wallet);
+        _checkApplication(a.wallet);
     }
 
-    function checkApplication(address wallet) isMember(msg.sender) private {
-        application storage a = applicationsLookup[wallet];
+    function _checkApplication(address _wallet) isMember(msg.sender) private {
+        application storage a = applicationsLookup[_wallet];
         uint256 totalVotes = a.yays + a.nays;
         if (totalVotes > memberIds.length / 3) {
             if (a.yays > a.nays) {
                 a.state = ApplicationState.Accepted;
-                bytes32 memberId = createMember(a.wallet);
+                bytes32 memberId = _createMember(a.wallet);
                 ApplicationAccepted(a.wallet, memberId, a.yays, a.nays);
             } else if (a.nays > a.yays) {
                 a.state = ApplicationState.Rejected;
@@ -168,8 +168,8 @@ contract KorasomGroup is KorasomToken {
         }
     }
 
-    function createMember(address wallet) isMember(msg.sender) private returns (bytes32 memberId) {
-        application storage a = applicationsLookup[wallet];
+    function _createMember(address _wallet) isMember(msg.sender) private returns (bytes32 memberId) {
+        application storage a = applicationsLookup[_wallet];
         require(a.state == ApplicationState.Accepted);
 
         memberId = keccak256(a.id, a.name, a.website, a.kind, a.comments, now);
@@ -231,35 +231,35 @@ contract KorasomGroup is KorasomToken {
         fundsWallet.transfer(msg.value);
     }
 
-    function getMemberVoteOnApplication(uint256 applicationId) isMember(msg.sender) view public returns (Vote vote) {
-        application storage a = applicationsById[applicationId];
+    function getMemberVoteOnApplication(uint256 _applicationId) isMember(msg.sender) view public returns (Vote vote) {
+        application storage a = applicationsById[_applicationId];
         return a.votes[msg.sender];
     }
 
-    function getMembership(address wallet) view public returns (bytes32 id, bytes32 name, bytes32 website, uint kind, uint state) {
-        membership storage m = memberLookup[wallet];
+    function getMembership(address _wallet) view public returns (bytes32 id, bytes32 name, bytes32 website, uint kind, uint state) {
+        membership storage m = memberLookup[_wallet];
         return (m.id, m.name, m.website, uint(m.kind), uint(m.state));
     }
 
-    function getMembershipById(bytes32 memberId) view public returns (address wallet, bytes32 name, bytes32 website, uint kind, uint state) {
-        membership storage m = membersById[memberId];
+    function getMembershipById(bytes32 _memberId) view public returns (address wallet, bytes32 name, bytes32 website, uint kind, uint state) {
+        membership storage m = membersById[_memberId];
         return (m.wallet, m.name, m.website, uint(m.kind), uint(m.state));
     }
 
-    function getApplicationById(uint256 applicationId) view public
+    function getApplicationById(uint256 _applicationId) view public
     returns (address wallet, bytes32 name, bytes32 website, bytes32 comments, uint kind, uint state) {
-        application storage a = applicationsById[applicationId];
+        application storage a = applicationsById[_applicationId];
         return (a.wallet, a.name, a.website, a.comments, uint(a.kind), uint(a.state));
     }
 
-    function getApplication(address wallet) view public
+    function getApplication(address _wallet) view public
     returns (uint256 id, bytes32 name, bytes32 website, bytes32 comments, uint kind, uint state) {
-        application storage a = applicationsLookup[wallet];
+        application storage a = applicationsLookup[_wallet];
         return (a.id, a.name, a.website, a.comments, uint(a.kind), uint(a.state));
     }
 
-    function getApplicationVotes(uint256 applicationId) view public returns (uint yays, uint nays) {
-        application storage a = applicationsById[applicationId];
+    function getApplicationVotes(uint256 _applicationId) view public returns (uint yays, uint nays) {
+        application storage a = applicationsById[_applicationId];
         return (a.yays, a.nays);
     }
 
